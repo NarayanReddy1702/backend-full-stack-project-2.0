@@ -42,7 +42,7 @@ const userSchema = new Schema(
       trim: true,
       lowercase: true,
     },
-    refrechToken: {
+    refreshToken: {
       type: String,
     },
   },
