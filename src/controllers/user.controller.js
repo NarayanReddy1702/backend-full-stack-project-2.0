@@ -18,12 +18,19 @@ const registerUser = asyncHandler(async (req, res) => {
   });
   if (existUser)
     return res.status(409).json({
-      message: "User already register",
+      message: "User already registered",
     });
 
   //check images
    const avatarLocalPath = await req.files?.avatar[0]?.path
-   const coverImageLocalPath = await req.files?.coverImage[0]?.path
+  //const coverImageLocalPath = await req.files?.coverImage[0]?.path
+
+  let coverImageLocalPath ;
+  if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0 ){
+    coverImageLocalPath = req.files.coverImage.path
+  }
+
+
 
    if(!avatarLocalPath){
     throw new ApiError(400,"Avatar field is required")
@@ -54,6 +61,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
    const createUser = await User.findById(user._id).select("-password -refrechToken")
 
+
+
    if(!createUser){
       throw new ApiError(500,"Something went Wrong while registaring the user")
    }
@@ -61,7 +70,6 @@ const registerUser = asyncHandler(async (req, res) => {
    return res.status(201).json(
    new ApiResponse(200,createUser,"User registered successfully")
    )
-  
 });
 
 export default registerUser;
