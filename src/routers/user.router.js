@@ -3,9 +3,7 @@ import {loginUser, logoutUser, registerUser} from "../controllers/user.controlle
 import { upload } from "../middlewares/multer.middleware.js";
 import autoMiddleware from "../middlewares/autho.middleware.js";
 
-
 const router = Router();
-
 router.route("/register").post(
   upload.fields([
     {

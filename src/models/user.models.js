@@ -1,4 +1,4 @@
-import mongoose, { Schema, model } from "mongoose";
+import mongoose , { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -40,7 +40,6 @@ const userSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      lowercase: true,
     },
     refreshToken: {
       type: String,
@@ -53,12 +52,13 @@ const userSchema = new Schema(
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  const hash =await bcrypt.hash(this.password, 10);
-  next();
+      this.password = await bcrypt.hash(this.password, 10);
+      next();
 });
 
+
 userSchema.methods.isPasswordCorrect = async function (password) {
-  return await bcrypt.compare(password, this.password);
+  return await bcrypt.compare(password,this.password)
 };
 
 userSchema.methods.generateAccessToken = function () {
@@ -77,14 +77,15 @@ userSchema.methods.generateAccessToken = function () {
 };
 
 userSchema.methods.generateRefreshToken = function () {
-  jwt.sign(
+ return  jwt.sign(
     {
       _id: this._id,
     },
-    process.env.REFRESH_TOKEN_SECRET,
+          process.env.REFRESH_TOKEN_SECRET,
     {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+         expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
     }
   );
+  
 };
 export const User = model("User", userSchema);

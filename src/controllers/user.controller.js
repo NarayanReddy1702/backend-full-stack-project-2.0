@@ -6,10 +6,11 @@ import { ApiResponse } from "../utils/apiResponse.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
   const user = await User.findById(userId);
-
+  
   const accessToken = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
-
+   console.log("ref",refreshToken);
+   
   user.refreshToken = refreshToken;
   user.save({ validateBeforeSave: false });
 
@@ -38,12 +39,13 @@ const registerUser = asyncHandler(async (req, res) => {
   //const coverImageLocalPath = await req.files?.coverImage[0]?.path
 
   let coverImageLocalPath;
+  
   if (
     req.files &&
     Array.isArray(req.files.coverImage) &&
     req.files.coverImage.length > 0
   ) {
-    coverImageLocalPath = req.files.coverImage.path;
+    coverImageLocalPath = req.files.coverImage[0].path;
   }
 
   if (!avatarLocalPath) {
@@ -72,12 +74,16 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   const createUser = await User.findById(user._id).select(
-    "-password -refrechToken"
+    "-password -refreshToken"
   );
 
   if (!createUser) {
     throw new ApiError(500, "Something went Wrong while registaring the user");
   }
+
+  const {accessToken , refreshToken} = generateAccessAndRefreshToken(createUser._id)
+
+    
 
   return res
     .status(201)
@@ -87,7 +93,8 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password, username } = req.body;
 
-  if (!(email || username)) {
+  
+  if (!(email || username)){
     throw new ApiError(400, " email or username is required");
   }
 
@@ -95,12 +102,13 @@ const loginUser = asyncHandler(async (req, res) => {
     $or: [{ email }, { username }],
   });
 
+
   if (!checkUser) {
     throw new ApiError(404, "User doesn't exist");
   }
 
-  const isPasswordValid = await checkUser.isPasswordCorrect(password);
-
+  const isPasswordValid = await checkUser.isPasswordCorrect(password.trim());
+  
   if (!isPasswordValid) {
     throw new ApiError(401, "Password is not correct");
   }
@@ -109,26 +117,32 @@ const loginUser = asyncHandler(async (req, res) => {
     checkUser._id
   );
 
+  console.log("access token",accessToken );
+  console.log("Refresh Tokwn", refreshToken);
+  
+  
   const option = {
-    secure: true,
-    httpOnly: true,
-  };
+  secure: true,
+  httpOnly: true,
+};
 
-  return res
-    .status(200)
-    .json(
-     new ApiResponse(
-        201,
-        { checkUser, accessToken, refreshToken },
-        "User logged In Successfully"
-      )
+res
+  .cookie("accessToken", accessToken, option)
+  .cookie("refreshToken", refreshToken, option)
+  .status(200)
+  .json(
+    new ApiResponse(
+      201,
+      { checkUser, accessToken, refreshToken },
+      "User logged In Successfully"
     )
-    .cookie("accessToken", accessToken, option)
-    .cookie("refreshToken", refreshToken, option);
+  );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  await User.findByIdAndUpdate(
+  console.log(req.user);
+  
+  const userData = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {

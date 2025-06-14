@@ -4,27 +4,34 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/user.models.js";
 
 const autoMiddleware = asyncHandler(async (req, res, next) => {
-   try {
-     const accessToken =
-       req.cookie?.accessToken ||
-       req.header("Authorization").replaced("Bearer ", "");
-     if(!accessToken){
-         throw new ApiError(401,"Invalid Access Token")
-      }
+  // console.log("Cookies:", req.cookies);
+  // console.log("Authorization Header:", req.header("Authorization"));
 
-      const decodeToken =   jwt.verify(accessToken,process.env.ACCESS_TOKEN_SECRET)
-      
-     const user = await User.findById(decodeToken._id)
-       if(!user){
-         throw new ApiError(401,"Invalid Access Token")
-      }
-      req.user = user
-      next()
-  
-   } catch (error) {
-      throw new ApiError(401,error?.message || "Invalid Access Token")
-   }
+  const accessToken =
+    req.cookies?.accessToken ||
+    req.header("Authorization")?.replace("Bearer ", "");
+
+  // console.log("Access Token:", accessToken);
+
+  if (!accessToken) {
+    throw new ApiError(401, "Access token missing or invalid");
+  }
+
+  let decodeToken;
+  try {
+    decodeToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+  } catch (err) {
+    throw new ApiError(401, "Invalid or expired access token");
+  }
+
+  const user = await User.findById(decodeToken._id);
+  if (!user) {
+    throw new ApiError(401, "User not found");
+  }
+
+  req.user = user;
+  next();
 });
 
 
-export default autoMiddleware
+export default autoMiddleware;

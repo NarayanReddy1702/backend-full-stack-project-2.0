@@ -8,8 +8,8 @@ import dotenv from "dotenv";
 dotenv.config({
   path: "./env",
 });
-
 const port = process.env.PORT || 8080;
+
 
 coonectDB()
   .then(() => {
@@ -17,6 +17,7 @@ coonectDB()
       console.log(`The app is runing on port ${port}`);
     });
   })
+
   .catch((error) => {
     console.log(" MongoDB connection Faild !!! ", error);
   });
